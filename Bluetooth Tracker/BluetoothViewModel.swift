@@ -28,7 +28,7 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate {
         names = []
         ids = []
         counts = []
-        totalDevices = 0
+        updateTotalDevices()
         centralManager?.stopScan()
         centralManager?.scanForPeripherals(withServices: nil, options: nil)
     }
@@ -45,12 +45,12 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate {
             deviceMap[deviceId] = (name: deviceName, rssi: RSSI, count: 1)
         }
 
-        // Update the lists
+        // Update the lists and total devices
         DispatchQueue.main.async {
             self.names = self.deviceMap.values.map { $0.name }
             self.ids = self.deviceMap.values.map { $0.rssi }
             self.counts = self.deviceMap.values.map { $0.count }
-            self.totalDevices = self.deviceMap.count
+            self.updateTotalDevices()
         }
     }
 
@@ -61,5 +61,10 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate {
             // Handle Bluetooth not available
             // Add appropriate user feedback if necessary
         }
+    }
+    
+    // Update totalDevices based on the filtered results
+    func updateTotalDevices() {
+        self.totalDevices = self.deviceMap.count
     }
 }

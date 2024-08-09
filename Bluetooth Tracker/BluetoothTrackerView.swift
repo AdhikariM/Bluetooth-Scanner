@@ -33,10 +33,14 @@ struct BluetoothTrackerView: View {
         }
     }
 
+    var totalFilteredDevices: Int {
+        return Set(filteredNames).count
+    }
+
     var body: some View {
         NavigationStack {
             VStack {
-                Text("Total Devices Found: \(viewModel.totalDevices)")
+                Text("Total Devices Found: \(totalFilteredDevices)")
                     .font(.headline)
                     .padding(.top)
 
@@ -54,7 +58,6 @@ struct BluetoothTrackerView: View {
                 }
                 .searchable(text: $searchText, prompt: Text("Search by name"))
             }
-            .navigationTitle("Bluetooth Scanner")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Refresh") {

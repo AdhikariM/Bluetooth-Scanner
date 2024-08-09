@@ -8,17 +8,19 @@
 
 /* Begin PBXBuildFile section */
 		2188638B2C65C1F300034EA4 /* Bluetooth_TrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2188638A2C65C1F300034EA4 /* Bluetooth_TrackerApp.swift */; };
-		2188638D2C65C1F300034EA4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2188638C2C65C1F300034EA4 /* ContentView.swift */; };
+		2188638D2C65C1F300034EA4 /* BluetoothTrackerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2188638C2C65C1F300034EA4 /* BluetoothTrackerView.swift */; };
 		2188638F2C65C1F700034EA4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2188638E2C65C1F700034EA4 /* Assets.xcassets */; };
 		218863922C65C1F700034EA4 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 218863912C65C1F700034EA4 /* Preview Assets.xcassets */; };
+		218863992C65C25400034EA4 /* BluetoothViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 218863982C65C25400034EA4 /* BluetoothViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		218863872C65C1F300034EA4 /* Bluetooth Tracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Bluetooth Tracker.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		2188638A2C65C1F300034EA4 /* Bluetooth_TrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bluetooth_TrackerApp.swift; sourceTree = "<group>"; };
-		2188638C2C65C1F300034EA4 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		2188638C2C65C1F300034EA4 /* BluetoothTrackerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothTrackerView.swift; sourceTree = "<group>"; };
 		2188638E2C65C1F700034EA4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		218863912C65C1F700034EA4 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		218863982C65C25400034EA4 /* BluetoothViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothViewModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,9 +54,10 @@
 			isa = PBXGroup;
 			children = (
 				2188638A2C65C1F300034EA4 /* Bluetooth_TrackerApp.swift */,
-				2188638C2C65C1F300034EA4 /* ContentView.swift */,
+				2188638C2C65C1F300034EA4 /* BluetoothTrackerView.swift */,
 				2188638E2C65C1F700034EA4 /* Assets.xcassets */,
 				218863902C65C1F700034EA4 /* Preview Content */,
+				218863982C65C25400034EA4 /* BluetoothViewModel.swift */,
 			);
 			path = "Bluetooth Tracker";
 			sourceTree = "<group>";
@@ -137,8 +140,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2188638D2C65C1F300034EA4 /* ContentView.swift in Sources */,
+				2188638D2C65C1F300034EA4 /* BluetoothTrackerView.swift in Sources */,
 				2188638B2C65C1F300034EA4 /* Bluetooth_TrackerApp.swift in Sources */,
+				218863992C65C25400034EA4 /* BluetoothViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -275,6 +279,7 @@
 				DEVELOPMENT_TEAM = DHULNHKLMB;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "   ";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -304,6 +309,7 @@
 				DEVELOPMENT_TEAM = DHULNHKLMB;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "   ";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

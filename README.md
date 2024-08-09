@@ -6,7 +6,7 @@ Bluetooth Scanning: Continuously scans for nearby Bluetooth devices.
 Device List: Displays a list of discovered devices with their names and RSSI values.
 Device Count: Shows the total number of devices found.
 Search Functionality: Allows users to filter devices by their names.
-Device Count Tracking: Tracks and displays how many times each device has been seen.
+Device Count Tracking: Tracks and displays how many times each device has been seen.  
 
 
 

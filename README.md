@@ -1,4 +1,5 @@
 Overview
+
 This is a SwiftUI application that scans for nearby Bluetooth devices, displays their names and RSSI, and allows users to search and filter devices based on their names. It also tracks how many times each device has been discovered.
 
 Features

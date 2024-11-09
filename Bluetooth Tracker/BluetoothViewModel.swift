@@ -26,7 +26,7 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate {
     private var centralManager: CBCentralManager?
 
     enum RSSIFilter: String, CaseIterable, Identifiable {
-        case all = "All"
+        case all = "RSSI: All"
         case strongSignal = "Strong (> -50)"
         case mediumSignal = "Medium (-50 to -80)"
         case weakSignal = "Weak (< -80)"

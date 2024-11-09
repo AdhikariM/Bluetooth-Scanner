@@ -9,62 +9,79 @@ import Foundation
 import CoreBluetooth
 import Combine
 
+struct BluetoothDevice: Identifiable {
+    let id: UUID
+    let name: String
+    let rssi: NSNumber
+    let count: Int
+}
+
 class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate {
-    @Published var names: [String] = []
-    @Published var ids: [NSNumber] = []
-    @Published var counts: [Int] = []
-    @Published var totalDevices: Int = 0
+    @Published var deviceMap = [UUID: BluetoothDevice]()
+    @Published var searchText = ""
+    @Published var selectedRSSIFilter = RSSIFilter.all
+    @Published private(set) var filteredDevices: [BluetoothDevice] = []
+    @Published private(set) var totalFilteredDevices: Int = 0
 
     private var centralManager: CBCentralManager?
-    private var deviceMap = [UUID: (name: String, rssi: NSNumber, count: Int)]()
+
+    enum RSSIFilter: String, CaseIterable, Identifiable {
+        case all = "RSSI: All"
+        case strongSignal = "Strong (> -50)"
+        case mediumSignal = "Medium (-50 to -80)"
+        case weakSignal = "Weak (< -80)"
+        
+        var id: String { self.rawValue }
+    }
 
     override init() {
         super.init()
         centralManager = CBCentralManager(delegate: self, queue: nil)
+        updateFilteredDevices()
     }
 
     func startScan() {
-        deviceMap.removeAll() // Clear existing devices
-        names = []
-        ids = []
-        counts = []
-        updateTotalDevices()
+        deviceMap.removeAll()
         centralManager?.stopScan()
         centralManager?.scanForPeripherals(withServices: nil, options: nil)
+        updateFilteredDevices()
     }
-
-    // MARK: - CBCentralManagerDelegate
 
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
         let deviceId = peripheral.identifier
         let deviceName = peripheral.name ?? deviceId.uuidString
-
+        
         if let existingDevice = deviceMap[deviceId] {
-            deviceMap[deviceId] = (name: existingDevice.name, rssi: RSSI, count: existingDevice.count + 1)
+            deviceMap[deviceId] = BluetoothDevice(id: deviceId, name: existingDevice.name, rssi: RSSI, count: existingDevice.count + 1)
         } else {
-            deviceMap[deviceId] = (name: deviceName, rssi: RSSI, count: 1)
+            deviceMap[deviceId] = BluetoothDevice(id: deviceId, name: deviceName, rssi: RSSI, count: 1)
         }
 
-        // Update the lists and total devices
-        DispatchQueue.main.async {
-            self.names = self.deviceMap.values.map { $0.name }
-            self.ids = self.deviceMap.values.map { $0.rssi }
-            self.counts = self.deviceMap.values.map { $0.count }
-            self.updateTotalDevices()
-        }
+        updateFilteredDevices()
     }
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         if central.state == .poweredOn {
             startScan()
-        } else {
-            // Handle Bluetooth not available
-            // Add appropriate user feedback if necessary
         }
     }
-    
-    // Update totalDevices based on the filtered results
-    func updateTotalDevices() {
-        self.totalDevices = self.deviceMap.count
+
+    func updateFilteredDevices() {
+        filteredDevices = deviceMap.values.filter { device in
+            switch selectedRSSIFilter {
+            case .all:
+                return true
+            case .strongSignal:
+                return device.rssi.intValue > -50
+            case .mediumSignal:
+                return device.rssi.intValue >= -80 && device.rssi.intValue <= -50
+            case .weakSignal:
+                return device.rssi.intValue < -80
+            }
+        }.filter { device in
+            searchText.isEmpty || device.name.localizedCaseInsensitiveContains(searchText)
+        }
+        
+        totalFilteredDevices = filteredDevices.count
     }
 }

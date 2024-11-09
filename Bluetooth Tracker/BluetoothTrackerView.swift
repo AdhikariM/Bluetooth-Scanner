@@ -8,55 +8,48 @@
 import SwiftUI
 
 struct BluetoothTrackerView: View {
-    @StateObject private var viewModel = BluetoothViewModel()
-    @State private var searchText = ""
-
-    var filteredNames: [String] {
-        if searchText.isEmpty {
-            return viewModel.names
-        } else {
-            return viewModel.names.filter { $0.localizedCaseInsensitiveContains(searchText) }
-        }
-    }
-
-    var filteredIds: [NSNumber] {
-        return filteredNames.compactMap { name in
-            guard let index = viewModel.names.firstIndex(of: name) else { return nil }
-            return viewModel.ids[index]
-        }
-    }
-
-    var filteredCounts: [Int] {
-        return filteredNames.compactMap { name in
-            guard let index = viewModel.names.firstIndex(of: name) else { return nil }
-            return viewModel.counts[index]
-        }
-    }
-
-    var totalFilteredDevices: Int {
-        return Set(filteredNames).count
-    }
-
+    @ObservedObject private var viewModel = BluetoothViewModel()
+    
     var body: some View {
         NavigationStack {
-            VStack {
-                Text("Total Devices Found: \(totalFilteredDevices)")
+            VStack(spacing: 0) {
+                Text("Total Devices Found: \(viewModel.totalFilteredDevices)")
                     .font(.headline)
                     .padding(.top)
-
-                List {
-                    ForEach(filteredNames.indices, id: \.self) { index in
-                        HStack {
-                            Text(filteredNames[index])
-                            Spacer()
-                            Text("RSSI: \(filteredIds[index])")
-                                .foregroundColor(.gray)
-                            Text("Seen: \(filteredCounts[index]) times")
-                                .foregroundColor(.blue)
+                
+                if viewModel.filteredDevices.isEmpty {
+                    Text("No devices found")
+                        .foregroundColor(.gray)
+                        .padding()
+                } else {
+                    List {
+                        ForEach(viewModel.filteredDevices) { device in
+                            HStack {
+                                Image(systemName: "dot.radiowaves.left.and.right")
+                                    .foregroundColor(.blue)
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(device.name)
+                                        .font(.body)
+                                        .bold()
+                                    
+                                    HStack {
+                                        Text("RSSI: \(device.rssi)")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                        
+                                        Spacer()
+                                        
+                                        Text("Seen: \(device.count) times")
+                                            .font(.caption)
+                                            .foregroundColor(.blue)
+                                    }
+                                }
+                            }
                         }
                     }
+                    .searchable(text: $viewModel.searchText)
                 }
-                .searchable(text: $searchText, prompt: Text("Search by name"))
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -64,14 +57,34 @@ struct BluetoothTrackerView: View {
                         viewModel.startScan()
                     }
                 }
+                
+                ToolbarItem(placement: .navigationBarLeading) {
+                    FilterToolbarView(selectedRSSIFilter: $viewModel.selectedRSSIFilter)
+                }
             }
-            .onAppear {
-                viewModel.startScan()
+            .onChange(of: viewModel.searchText) { viewModel.updateFilteredDevices()
+            }
+            .onChange(of: viewModel.selectedRSSIFilter) { viewModel.updateFilteredDevices()
             }
         }
     }
 }
 
+
 #Preview {
     BluetoothTrackerView()
+}
+
+struct FilterToolbarView: View {
+    @Binding var selectedRSSIFilter: BluetoothViewModel.RSSIFilter
+    
+    var body: some View {
+        Picker("Filter", selection: $selectedRSSIFilter) {
+            ForEach(BluetoothViewModel.RSSIFilter.allCases) { filter in
+                Text(filter.rawValue).tag(filter)
+            }
+        }
+        .pickerStyle(MenuPickerStyle())
+        .fixedSize()
+    }
 }

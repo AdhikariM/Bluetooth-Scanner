@@ -24,7 +24,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         if let location = locations.last {
             currentLocation = location.coordinate
-            locationManager.stopUpdatingLocation()  // Stop updating to save battery once we have a location
+            locationManager.stopUpdatingLocation()
         }
     }
 

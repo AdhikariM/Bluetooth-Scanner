@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		216A51BF2CE0609300055528 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 216A51BE2CE0609300055528 /* LocationManager.swift */; };
 		2188638B2C65C1F300034EA4 /* Bluetooth_TrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2188638A2C65C1F300034EA4 /* Bluetooth_TrackerApp.swift */; };
 		2188638D2C65C1F300034EA4 /* BluetoothTrackerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2188638C2C65C1F300034EA4 /* BluetoothTrackerView.swift */; };
 		2188638F2C65C1F700034EA4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2188638E2C65C1F700034EA4 /* Assets.xcassets */; };
@@ -15,6 +16,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		216A51BE2CE0609300055528 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
 		218863872C65C1F300034EA4 /* Bluetooth Tracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Bluetooth Tracker.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		2188638A2C65C1F300034EA4 /* Bluetooth_TrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bluetooth_TrackerApp.swift; sourceTree = "<group>"; };
 		2188638C2C65C1F300034EA4 /* BluetoothTrackerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothTrackerView.swift; sourceTree = "<group>"; };
@@ -53,6 +55,7 @@
 		218863892C65C1F300034EA4 /* Bluetooth Tracker */ = {
 			isa = PBXGroup;
 			children = (
+				216A51BE2CE0609300055528 /* LocationManager.swift */,
 				2188638A2C65C1F300034EA4 /* Bluetooth_TrackerApp.swift */,
 				2188638C2C65C1F300034EA4 /* BluetoothTrackerView.swift */,
 				2188638E2C65C1F700034EA4 /* Assets.xcassets */,
@@ -140,6 +143,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				216A51BF2CE0609300055528 /* LocationManager.swift in Sources */,
 				2188638D2C65C1F300034EA4 /* BluetoothTrackerView.swift in Sources */,
 				2188638B2C65C1F300034EA4 /* Bluetooth_TrackerApp.swift in Sources */,
 				218863992C65C25400034EA4 /* BluetoothViewModel.swift in Sources */,
@@ -280,6 +284,9 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "   ";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Your location is needed to display nearby devices on the map.";
+				INFOPLIST_KEY_NSLocationUsageDescription = "Your location is needed to display nearby devices on the map.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is needed to display nearby devices on the map.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -310,6 +317,9 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "   ";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Your location is needed to display nearby devices on the map.";
+				INFOPLIST_KEY_NSLocationUsageDescription = "Your location is needed to display nearby devices on the map.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is needed to display nearby devices on the map.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

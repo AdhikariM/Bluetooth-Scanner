@@ -117,7 +117,7 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
 
     func updateRegion() {
-        guard let userLocation = userLocation else { return }
+       // guard let userLocation = userLocation else { return }
         
         let latitudes = deviceLocations.map { $0.coordinate.latitude }
         let longitudes = deviceLocations.map { $0.coordinate.longitude }

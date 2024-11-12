@@ -34,12 +34,7 @@ struct BluetoothTrackerView: View {
                         .cornerRadius(12)
                         .padding()
                         .onAppear {
-                            mapPosition = .region(
-                                MKCoordinateRegion(
-                                    center: currentLocation,
-                                    span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-                                )
-                            )
+                            setMapToCurrentLocation()
                         }
                     } else {
                         Text("Retrieving current location...")
@@ -70,6 +65,7 @@ struct BluetoothTrackerView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Refresh") {
                         viewModel.startScan()
+                        setMapToCurrentLocation()
                     }
                 }
                 
@@ -81,8 +77,18 @@ struct BluetoothTrackerView: View {
             .onChange(of: viewModel.selectedRSSIFilter) { viewModel.updateFilteredDevices() }
         }
     }
+    
+    private func setMapToCurrentLocation() {
+        if let currentLocation = locationManager.currentLocation {
+            mapPosition = .region(
+                MKCoordinateRegion(
+                    center: currentLocation,
+                    span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+                )
+            )
+        }
+    }
 }
-
 
 struct DeviceRowView: View {
     var device: BluetoothDevice
@@ -114,7 +120,6 @@ struct DeviceRowView: View {
     }
 }
 
-
 struct FilterToolbarView: View {
     @Binding var selectedRSSIFilter: BluetoothViewModel.RSSIFilter
     
@@ -132,4 +137,3 @@ struct FilterToolbarView: View {
 #Preview {
     BluetoothTrackerView()
 }
-

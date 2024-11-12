@@ -283,6 +283,7 @@
 				DEVELOPMENT_TEAM = DHULNHKLMB;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "BLE Scanner";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "   ";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Your location is needed to display nearby devices on the map.";
 				INFOPLIST_KEY_NSLocationUsageDescription = "Your location is needed to display nearby devices on the map.";
@@ -316,6 +317,7 @@
 				DEVELOPMENT_TEAM = DHULNHKLMB;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "BLE Scanner";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "   ";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Your location is needed to display nearby devices on the map.";
 				INFOPLIST_KEY_NSLocationUsageDescription = "Your location is needed to display nearby devices on the map.";

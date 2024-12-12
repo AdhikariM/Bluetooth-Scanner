@@ -73,6 +73,7 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         centralManager?.stopScan()
         centralManager?.scanForPeripherals(withServices: nil, options: nil)
         updateFilteredDevices()
+        HapticManager.notification(type: .success)
     }
 
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {

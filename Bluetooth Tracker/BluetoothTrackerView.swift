@@ -28,7 +28,8 @@ struct BluetoothTrackerView: View {
                             Marker(UIDevice.current.name, coordinate: currentLocation)
                         }
                         .mapControls {
-                            MapUserLocationButton()
+                           MapUserLocationButton()
+                           MapScaleView()
                         }
                         .frame(height: 200)
                         .cornerRadius(12)
@@ -53,7 +54,16 @@ struct BluetoothTrackerView: View {
                     } else {
                         VStack {
                             ForEach(viewModel.filteredDevices) { device in
-                                DeviceRowView(device: device)
+                                HStack {
+                                    DeviceRowView(device: device)
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                }
+                                .padding()
+                                .background {
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(Color(uiColor: .systemGray4).opacity(0.4))
+                                }
                             }
                         }
                         .padding(.horizontal)
@@ -63,10 +73,13 @@ struct BluetoothTrackerView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Refresh") {
-                        viewModel.startScan()
-                        setMapToCurrentLocation()
-                    }
+                    Button(action: {
+                        withAnimation(.linear(duration: 2.0)) {
+                            viewModel.startScan()
+                        }
+                    }, label: {
+                        Image(systemName: "goforward")
+                    })
                 }
                 
                 ToolbarItem(placement: .navigationBarLeading) {

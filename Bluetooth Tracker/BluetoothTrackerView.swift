@@ -75,10 +75,11 @@ struct BluetoothTrackerView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
                         withAnimation(.linear(duration: 2.0)) {
+                            setMapToCurrentLocation()
                             viewModel.startScan()
                         }
                     }, label: {
-                        Image(systemName: "goforward")
+                        Image(systemName: "arrow.trianglehead.clockwise")
                     })
                 }
                 

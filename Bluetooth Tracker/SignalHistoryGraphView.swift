@@ -12,22 +12,22 @@ import Charts
 struct SignalHistoryGraphView: View {
     let device: BluetoothDevice
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedTimeRange: TimeRange = .thirtyMinutes
+    @State private var selectedTimeRange: TimeRange = .fiveMinutes
     @State private var selectedDataPoint: (timestamp: Date, rssi: Int)?
     @State private var isZoomed = false
     
     enum TimeRange: String, CaseIterable {
-        case fiveMinutes = "5 min"
-        case fifteenMinutes = "15 min"
-        case thirtyMinutes = "30 min"
-        case oneHour = "1 hour"
+        case oneMinute = "1 Min"
+        case twoMinutes = "2 Mins"
+        case fiveMinutes = "5 Mins"
+        case fifteenMinutes = "15 Mins"
         
         var minutes: Int {
             switch self {
+            case .oneMinute: return 1
+            case .twoMinutes: return 2
             case .fiveMinutes: return 5
             case .fifteenMinutes: return 15
-            case .thirtyMinutes: return 30
-            case .oneHour: return 60
             }
         }
     }

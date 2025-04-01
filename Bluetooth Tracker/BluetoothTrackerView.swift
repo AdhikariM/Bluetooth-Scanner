@@ -89,7 +89,7 @@ struct BluetoothTrackerView: View {
                     }
                 }
             }
-            .navigationTitle("Bluetooth Tracker")
+            .navigationTitle("Bluetooth Tracker").toolbarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
@@ -167,7 +167,6 @@ struct DeviceRowView: View {
 struct DeviceDetailView: View {
     let device: BluetoothDevice
     @Environment(\.dismiss) private var dismiss
-    @State private var showingSignalHistory = false
     
     var body: some View {
         NavigationStack {
@@ -201,7 +200,7 @@ struct DeviceDetailView: View {
                     .cornerRadius(15)
                     .shadow(radius: 5)
                     
-                    Button(action: { showingSignalHistory = true }) {
+                    NavigationLink(destination: SignalHistoryGraphView(device: device)) {
                         HStack {
                             Image(systemName: "chart.line.uptrend.xyaxis")
                                 .font(.title2)
@@ -227,9 +226,6 @@ struct DeviceDetailView: View {
                         dismiss()
                     }
                 }
-            }
-            .sheet(isPresented: $showingSignalHistory) {
-                SignalHistoryGraphView(device: device)
             }
         }
     }

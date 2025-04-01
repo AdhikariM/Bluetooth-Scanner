@@ -24,7 +24,6 @@ struct BluetoothTrackerView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 4) {
-                    // Search Bar
                     HStack {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(.gray)
@@ -94,13 +93,11 @@ struct BluetoothTrackerView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        withAnimation(.linear(duration: 2.0)) {
-                            setMapToCurrentLocation()
-                            viewModel.startScan(triggerHaptic: true)
-                        }
-                    }, label: {
-                        Image(systemName: "arrow.trianglehead.clockwise")
-                    })
+                        viewModel.startScan(triggerHaptic: true)
+                        setMapToCurrentLocation()
+                    }) {
+                        Image(systemName: "arrow.clockwise")
+                    }
                 }
                 
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -176,6 +173,7 @@ struct DeviceDetailView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
+                    // Enhanced Signal Indicator
                     SignalIndicatorView(device: device)
                         .frame(height: 200)
                         .padding()
@@ -203,7 +201,6 @@ struct DeviceDetailView: View {
                     .cornerRadius(15)
                     .shadow(radius: 5)
                     
-                    // Signal History Button
                     Button(action: { showingSignalHistory = true }) {
                         HStack {
                             Image(systemName: "chart.line.uptrend.xyaxis")
@@ -245,10 +242,11 @@ struct SignalIndicatorView: View {
     var body: some View {
         GeometryReader { geometry in
             HStack(spacing: 0) {
+
                 ZStack {
                     Circle()
                         .stroke(Color.gray.opacity(0.2), lineWidth: 20)
-
+                    
                     Circle()
                         .trim(from: 0, to: signalStrengthFraction)
                         .stroke(signalStrengthColor, style: StrokeStyle(lineWidth: 20, lineCap: .round))

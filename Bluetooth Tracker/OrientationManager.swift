@@ -8,56 +8,75 @@
 
 import CoreMotion
 import SwiftUI
+import Foundation
+import os.log
 
 class OrientationManager: NSObject, ObservableObject {
-    @Published var heading: Double = 0
-    @Published var deviceOrientation: UIDeviceOrientation = .unknown
-    
     private let motionManager = CMMotionManager()
-    private let locationManager = CLLocationManager()
+    @Published var currentHeading: Double = 0
+    @Published var isUpdating = false
     
     override init() {
         super.init()
-        setupMotionManager()
-        setupLocationManager()
+        logger.info("🧭 Orientation manager initialized")
+        startUpdates()
     }
     
-    private func setupMotionManager() {
+    func startUpdates() {
+        guard motionManager.isDeviceMotionAvailable else {
+            logger.error("❌ Device motion not available")
+            return
+        }
+        
         motionManager.deviceMotionUpdateInterval = 0.1
         motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, error in
-            guard let motion = motion else { return }
+            guard let self = self else { return }
             
-            // Get device orientation
-            let orientation = UIDevice.current.orientation
-            self?.deviceOrientation = orientation
-
-            let attitude = motion.attitude
-            var heading = attitude.yaw * 180 / .pi
-            if heading < 0 {
-                heading += 360
+            if let error = error {
+                logger.error("❌ Motion update error: \(error.localizedDescription)")
+                return
             }
-            self?.heading = heading
+            
+            guard let motion = motion else {
+                logger.warning("⚠️ No motion data available")
+                return
+            }
+            
+            // Calculate heading from device motion
+            let heading = motion.attitude.yaw * 180 / .pi
+            self.currentHeading = heading
+            self.isUpdating = true
         }
+        
+        logger.info("✅ Started motion updates")
     }
     
-    private func setupLocationManager() {
-        locationManager.delegate = self
-        locationManager.headingFilter = 5
-        locationManager.startUpdatingHeading()
+    func stopUpdates() {
+        motionManager.stopDeviceMotionUpdates()
+        isUpdating = false
+        logger.info("🛑 Stopped motion updates")
     }
     
     func calculateAngleToDevice(deviceRSSI: NSNumber) -> Double {
-        // Convert RSSI to approximate distance (this is a rough estimation)
-        let distance = pow(10, (deviceRSSI.doubleValue + 60) / 20)
-
-        let angle = heading + (distance * 5)
+        // This is a simplified calculation - you might want to adjust based on your needs
+        let baseAngle = currentHeading
+        let rssiValue = deviceRSSI.doubleValue
         
-        return angle
+        // Normalize RSSI to an angle (example: -100 to 0 dBm maps to 0 to 360 degrees)
+        let normalizedRSSI = (rssiValue + 100) / 100
+        let angleOffset = normalizedRSSI * 360
+        
+        return (baseAngle + angleOffset).truncatingRemainder(dividingBy: 360)
+    }
+    
+    deinit {
+        stopUpdates()
+        logger.info("🧭 Orientation manager deinitialized")
     }
 }
 
 extension OrientationManager: CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
-        heading = newHeading.trueHeading
+        currentHeading = newHeading.trueHeading
     }
 } 

@@ -10,6 +10,12 @@ import CoreBluetooth
 import CoreLocation
 import Combine
 import MapKit
+import os.log
+
+public let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "com.bluetooth.scanner",
+    category: "BluetoothScanner"
+)
 
 struct BluetoothDevice: Identifiable, Equatable {
     let id: UUID
@@ -102,7 +108,7 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         locationManager?.requestWhenInUseAuthorization()
         locationManager?.startUpdatingLocation()
         
-        centralManager = CBCentralManager(delegate: self, queue: scanQueue)
+        centralManager = CBCentralManager(delegate: self, queue: nil)
         
         startContinuousUpdates()
     }
@@ -175,29 +181,58 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("Failed to get user location: \(error.localizedDescription)")
+        logger.error("❌ Failed to get user location: \(error.localizedDescription)")
     }
 
     func startScan(triggerHaptic: Bool = false) {
+        guard let centralManager = centralManager, centralManager.state == .poweredOn else {
+            logger.error("❌ Cannot start scan: Bluetooth is not ready")
+            return
+        }
+        
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            guard !self.isScanning else { return }
-            self.isScanning = true
+            if triggerHaptic {
+                let generator = UIImpactFeedbackGenerator(style: .medium)
+                generator.impactOccurred()
+            }
             
+            logger.info("🔄 Starting new scan...")
+            
+            // Stop any existing scan
+            if let manager = self.centralManager {
+                manager.stopScan()
+            }
+            
+            // Clear all existing data
             self.deviceMap.removeAll()
             self.lastRSSIUpdate.removeAll()
-            self.centralManager?.stopScan()
+            self.filteredDevices.removeAll()
+            self.deviceLocations.removeAll()
+            self.totalFilteredDevices = 0
             
+            // Update UI to show empty state
+            self.updateFilteredDevices()
+            
+            // Start a new scan with more permissive options
             let options: [String: Any] = [
                 CBCentralManagerScanOptionAllowDuplicatesKey: true
             ]
             
-            self.centralManager?.scanForPeripherals(withServices: nil, options: options)
-            self.updateFilteredDevices()
+            // Start scanning for all devices
+            logger.debug("⚙️ Starting scan with options: \(options)")
+            self.isScanning = true
             
-            if triggerHaptic {
-                HapticManager.notification(type: .success)
+            // Add a small delay before starting the new scan
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                if let manager = self.centralManager {
+                    manager.scanForPeripherals(
+                        withServices: nil,
+                        options: options
+                    )
+                    logger.info("✅ Scan started - All previous devices cleared")
+                }
             }
         }
     }
@@ -210,15 +245,45 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
 
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
+        logger.debug("📱 Discovered device: \(peripheral.name ?? peripheral.identifier.uuidString) with RSSI: \(RSSI)")
+        
         let currentTime = Date()
+        let deviceId = peripheral.identifier
         
         deviceUpdateQueue.async { [weak self] in
             guard let self = self else { return }
             
-            let deviceId = peripheral.identifier
             let lastRSSI = self.lastRSSIUpdate[deviceId]
-            
             if let lastRSSI = lastRSSI, abs(lastRSSI.intValue - RSSI.intValue) <= self.rssiThreshold {
+                // Update just the lastSeen time for existing device
+                if let existingDevice = self.deviceMap[deviceId] {
+                    let updatedDevice = BluetoothDevice(
+                        id: existingDevice.id,
+                        name: existingDevice.name,
+                        rssi: existingDevice.rssi,
+                        count: existingDevice.count + 1,
+                        coordinate: existingDevice.coordinate,
+                        distance: existingDevice.distance,
+                        angle: existingDevice.angle,
+                        manufacturerData: existingDevice.manufacturerData,
+                        serviceUUIDs: existingDevice.serviceUUIDs,
+                        isConnectable: existingDevice.isConnectable,
+                        txPowerLevel: existingDevice.txPowerLevel,
+                        advertisementData: existingDevice.advertisementData,
+                        state: existingDevice.state,
+                        services: existingDevice.services,
+                        characteristics: existingDevice.characteristics,
+                        lastSeen: currentTime,
+                        firstSeen: existingDevice.firstSeen,
+                        deviceType: existingDevice.deviceType,
+                        batteryLevel: existingDevice.batteryLevel,
+                        discoveryHistory: existingDevice.discoveryHistory + [(timestamp: currentTime, rssi: RSSI.intValue)]
+                    )
+                    DispatchQueue.main.async {
+                        self.deviceMap[deviceId] = updatedDevice
+                        self.updateFilteredDevices()
+                    }
+                }
                 return
             }
             
@@ -227,7 +292,6 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             let deviceName = peripheral.name ?? deviceId.uuidString
             let distance = self.calculateDistance(from: RSSI)
             let angle = self.orientationManager.calculateAngleToDevice(deviceRSSI: RSSI)
-            let deviceLocation = CLLocationCoordinate2D(latitude: 90.00, longitude: 90.00)
             
             let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data
             let serviceUUIDs = advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID]
@@ -236,18 +300,16 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             
             let deviceType = self.determineDeviceType(serviceUUIDs: serviceUUIDs, manufacturerData: manufacturerData)
             
-            let newDevice: BluetoothDevice
+            let deviceLocation = CLLocationCoordinate2D(
+                latitude: self.userLocation?.latitude ?? 0,
+                longitude: self.userLocation?.longitude ?? 0
+            )
             
             if let existingDevice = self.deviceMap[deviceId] {
-                var history = existingDevice.discoveryHistory
-                history.append((timestamp: currentTime, rssi: RSSI.intValue))
-                
-                let thirtyMinutesAgo = currentTime.addingTimeInterval(-30 * 60)
-                history = history.filter { $0.timestamp >= thirtyMinutesAgo }
-                
-                newDevice = BluetoothDevice(
+                // Update existing device
+                let updatedDevice = BluetoothDevice(
                     id: deviceId,
-                    name: existingDevice.name,
+                    name: deviceName,
                     rssi: RSSI,
                     count: existingDevice.count + 1,
                     coordinate: deviceLocation,
@@ -265,10 +327,14 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                     firstSeen: existingDevice.firstSeen,
                     deviceType: deviceType,
                     batteryLevel: existingDevice.batteryLevel,
-                    discoveryHistory: history
+                    discoveryHistory: existingDevice.discoveryHistory + [(timestamp: currentTime, rssi: RSSI.intValue)]
                 )
+                DispatchQueue.main.async {
+                    self.deviceMap[deviceId] = updatedDevice
+                }
             } else {
-                newDevice = BluetoothDevice(
+                // Create new device
+                let newDevice = BluetoothDevice(
                     id: deviceId,
                     name: deviceName,
                     rssi: RSSI,
@@ -290,16 +356,16 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                     batteryLevel: nil,
                     discoveryHistory: [(timestamp: currentTime, rssi: RSSI.intValue)]
                 )
+                DispatchQueue.main.async {
+                    self.deviceMap[deviceId] = newDevice
+                }
             }
             
             DispatchQueue.main.async {
-                self.deviceMap[deviceId] = newDevice
-                self.lastUpdateTime = currentTime
                 self.updateFilteredDevices()
+                self.updateDeviceLocations()
             }
         }
-        
-        updateDeviceLocations()
     }
 
     private func determineDeviceType(serviceUUIDs: [CBUUID]?, manufacturerData: Data?) -> String? {
@@ -332,8 +398,34 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            if central.state == .poweredOn {
+            logger.info("📱 Bluetooth state updated: \(central.state.rawValue)")
+            switch central.state {
+            case .poweredOn:
+                logger.info("✅ Bluetooth is powered on, starting scan...")
                 self.startScan(triggerHaptic: false)
+            case .poweredOff:
+                logger.warning("⚠️ Bluetooth is powered off")
+                if let manager = self.centralManager {
+                    manager.stopScan()
+                }
+                self.deviceMap.removeAll()
+                self.updateFilteredDevices()
+            case .unauthorized:
+                logger.error("❌ Bluetooth permission not granted")
+            case .unsupported:
+                logger.error("❌ Bluetooth is not supported on this device")
+            case .resetting:
+                logger.warning("⚠️ Bluetooth is resetting")
+                // Stop scanning and clear devices when Bluetooth is resetting
+                if let manager = self.centralManager {
+                    manager.stopScan()
+                }
+                self.deviceMap.removeAll()
+                self.updateFilteredDevices()
+            case .unknown:
+                logger.warning("⚠️ Bluetooth state is unknown")
+            @unknown default:
+                logger.warning("⚠️ Unknown Bluetooth state")
             }
         }
     }

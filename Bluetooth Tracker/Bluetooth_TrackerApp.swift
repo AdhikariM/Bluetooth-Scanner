@@ -6,9 +6,14 @@
 //
 
 import SwiftUI
+import os.log
 
 @main
 struct Bluetooth_TrackerApp: App {
+    init() {
+        logger.info("🚀 App launched")
+    }
+    
     var body: some Scene {
         WindowGroup {
             BluetoothTrackerView()

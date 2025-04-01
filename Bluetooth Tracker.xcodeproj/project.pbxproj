@@ -301,7 +301,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "BLE Scanner";
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "   ";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Bluetooth access is needed to scan for nearby devices.";
+				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Bluetooth access is needed to scan for nearby devices.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Your location is needed to display nearby devices on the map.";
 				INFOPLIST_KEY_NSLocationUsageDescription = "Your location is needed to display nearby devices on the map.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is needed to display nearby devices on the map.";
@@ -334,7 +335,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "BLE Scanner";
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "   ";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Bluetooth access is needed to scan for nearby devices.";
+				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Bluetooth access is needed to scan for nearby devices.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Your location is needed to display nearby devices on the map.";
 				INFOPLIST_KEY_NSLocationUsageDescription = "Your location is needed to display nearby devices on the map.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is needed to display nearby devices on the map.";

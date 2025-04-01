@@ -7,12 +7,34 @@
 
 
 import Foundation
-import SwiftUI
+import UIKit
+import os.log
 
 class HapticManager {
-   static  let generator = UINotificationFeedbackGenerator()
+    static let shared = HapticManager()
     
-    static func notification(type: UINotificationFeedbackGenerator.FeedbackType) {
+    private init() {
+        logger.info("🔄 Haptic manager initialized")
+    }
+    
+    func triggerHapticFeedback(style: UIImpactFeedbackGenerator.FeedbackStyle = .medium) {
+        let generator = UIImpactFeedbackGenerator(style: style)
+        generator.prepare()
+        generator.impactOccurred()
+        logger.debug("🔄 Haptic feedback triggered with style: \(style.rawValue)")
+    }
+    
+    func triggerNotificationFeedback(type: UINotificationFeedbackGenerator.FeedbackType) {
+        let generator = UINotificationFeedbackGenerator()
+        generator.prepare()
         generator.notificationOccurred(type)
+        logger.debug("🔔 Notification feedback triggered with type: \(type.rawValue)")
+    }
+    
+    func triggerSelectionFeedback() {
+        let generator = UISelectionFeedbackGenerator()
+        generator.prepare()
+        generator.selectionChanged()
+        logger.debug("🔄 Selection feedback triggered")
     }
 }

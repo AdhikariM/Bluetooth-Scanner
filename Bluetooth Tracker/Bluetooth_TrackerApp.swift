@@ -10,6 +10,8 @@ import os.log
 
 @main
 struct Bluetooth_TrackerApp: App {
+    @StateObject private var bluetoothViewModel = BluetoothViewModel()
+    
     init() {
         logger.info("🚀 App launched")
     }
@@ -17,6 +19,7 @@ struct Bluetooth_TrackerApp: App {
     var body: some Scene {
         WindowGroup {
             BluetoothTrackerView()
+                .environmentObject(bluetoothViewModel)
         }
     }
 }

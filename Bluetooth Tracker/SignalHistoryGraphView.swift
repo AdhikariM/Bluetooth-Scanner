@@ -146,11 +146,13 @@ struct SignalHistoryGraphView: View {
                 QualityIndicator(color: .red, label: "Poor")
             }
         }
+        .frame(maxWidth: .infinity)
         .padding()
         .background(Color(.systemBackground))
         .cornerRadius(15)
         .shadow(radius: 5)
         .padding(.horizontal)
+        
     }
     
     var body: some View {

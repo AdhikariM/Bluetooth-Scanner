@@ -11,6 +11,7 @@ import CoreLocation
 import Combine
 import MapKit
 import os.log
+import SwiftUI
 
 public let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "com.bluetooth.scanner",
@@ -95,6 +96,7 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     @Published var characteristicValues: [CBUUID: Data] = [:]
     @Published var notifyingCharacteristics: Set<CBUUID> = []
     @Published public var connectionSettings: [UUID: ConnectionSettings] = [:]
+    @Published private(set) var thermalState: ProcessInfo.ThermalState = .nominal
     
     private var centralManager: CBCentralManager?
     private var locationManager: CLLocationManager?
@@ -326,6 +328,8 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         var id: String { self.rawValue }
     }
 
+    private var thermalStateObserver: NSObjectProtocol?
+    
     override init() {
         self.region = MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194),
@@ -344,6 +348,7 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         loadConnectionSettings()
         
         startContinuousUpdates()
+        startThermalStateMonitoring()
     }
 
     private func startContinuousUpdates() {
@@ -353,9 +358,27 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         RunLoop.main.add(updateTimer!, forMode: .common)
     }
     
+    private func startThermalStateMonitoring() {
+        // Get initial thermal state
+        thermalState = ProcessInfo.processInfo.thermalState
+        
+        // Observe thermal state changes
+        thermalStateObserver = NotificationCenter.default.addObserver(
+            forName: ProcessInfo.thermalStateDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.thermalState = ProcessInfo.processInfo.thermalState
+            logger.info("🌡️ Thermal state changed to: \(self?.thermalState.description ?? "unknown")")
+        }
+    }
+    
     deinit {
         updateTimer?.invalidate()
         updateTimer = nil
+        if let observer = thermalStateObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
     
     private func updateDeviceAnglesAndDistances() {
@@ -1039,13 +1062,9 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             logger.info("🔄 Connection state updated to connected")
         }
         
-        // Start discovering services
-        logger.info("🔍 Starting service discovery...")
-        peripheral.discoverServices([
-            BLEServices.battery,
-            BLEServices.deviceInfo,
-            BLEServices.garmentService
-        ])
+        // Start discovering services - pass nil to discover all services
+        logger.info("🔍 Starting service discovery for all services...")
+        peripheral.discoverServices(nil)
     }
     
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
@@ -1269,6 +1288,38 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
 extension Data {
     var hexDescription: String {
         return self.map { String(format: "%02X", $0) }.joined()
+    }
+}
+
+extension ProcessInfo.ThermalState {
+    var description: String {
+        switch self {
+        case .nominal:
+            return "Normal"
+        case .fair:
+            return "Fair"
+        case .serious:
+            return "Serious"
+        case .critical:
+            return "Critical"
+        @unknown default:
+            return "Unknown"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .nominal:
+            return .green
+        case .fair:
+            return .yellow
+        case .serious:
+            return .orange
+        case .critical:
+            return .red
+        @unknown default:
+            return .gray
+        }
     }
 }
 

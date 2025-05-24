@@ -24,6 +24,22 @@ struct BluetoothTrackerView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 4) {
+                    // Thermal State Banner
+                    if viewModel.thermalState != .nominal {
+                        HStack {
+                            Image(systemName: "thermometer")
+                                .foregroundColor(viewModel.thermalState.color)
+                            Text("Thermal State: \(viewModel.thermalState.description)")
+                                .bold()
+                                .foregroundColor(viewModel.thermalState.color)
+                            Spacer()
+                        }
+                        .padding(10)
+                        .background(viewModel.thermalState.color.opacity(0.15))
+                        .cornerRadius(10)
+                        .padding(.horizontal)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    }
                     HStack {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(.gray)
@@ -301,12 +317,11 @@ struct DeviceDetailView: View {
                         .foregroundColor(.white)
                         .cornerRadius(10)
                     }
-                //    .padding(.horizontal)
                 }
                 .padding()
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("Device Details")
+            .navigationTitle(device.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -335,9 +350,9 @@ struct DeviceDetailView: View {
         case .connecting:
             return "link.badge.plus"
         case .disconnecting:
-            return "link.badge.minus"
+            return "personalhotspot.slash"
         default:
-            return "link.slash.circle"
+            return "exclamationmark.icloud"
         }
     }
     

@@ -24,21 +24,16 @@ struct BluetoothTrackerView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 4) {
-                    // Thermal State Banner
-                    if viewModel.thermalState != .nominal {
-                        HStack {
-                            Image(systemName: "thermometer")
-                                .foregroundColor(viewModel.thermalState.color)
-                            Text("Thermal State: \(viewModel.thermalState.description)")
-                                .bold()
-                                .foregroundColor(viewModel.thermalState.color)
-                            Spacer()
-                        }
-                        .padding(10)
-                        .background(viewModel.thermalState.color.opacity(0.15))
-                        .cornerRadius(10)
-                        .padding(.horizontal)
-                        .transition(.move(edge: .top).combined(with: .opacity))
+                    // Thermal State Banner - Always visible but style changes based on state
+                    ThermalStateBannerView(thermalState: viewModel.thermalState)
+                    
+                    // Power Saving Mode Toggle
+                    if viewModel.thermalState != .nominal || viewModel.powerSavingMode {
+                        PowerSavingBannerView(
+                            powerSavingMode: viewModel.powerSavingMode,
+                            thermalState: viewModel.thermalState,
+                            onToggle: { viewModel.togglePowerSavingMode() }
+                        )
                     }
                     HStack {
                         Image(systemName: "magnifyingglass")
@@ -971,6 +966,110 @@ struct LoadingServicesView: View {
         }
         .frame(maxWidth: .infinity)
         .padding()
+    }
+}
+
+struct PowerSavingBannerView: View {
+    let powerSavingMode: Bool
+    let thermalState: ProcessInfo.ThermalState
+    let onToggle: () -> Void
+    
+    private var shouldShowPowerSaving: Bool {
+        thermalState != .nominal || powerSavingMode
+    }
+    
+    private var bannerColor: Color {
+        if thermalState != .nominal {
+            return .orange
+        } else {
+            return powerSavingMode ? .green : .blue
+        }
+    }
+    
+    private var bannerText: String {
+        if thermalState != .nominal {
+            return "Device heating detected"
+        } else {
+            return powerSavingMode ? "Power saving active" : "Enable power saving"
+        }
+    }
+    
+    var body: some View {
+        HStack {
+            Image(systemName: powerSavingMode ? "battery.100" : "battery.25")
+                .foregroundColor(bannerColor)
+            
+            Text(bannerText)
+                .font(.caption)
+                .foregroundColor(bannerColor)
+            
+            Spacer()
+            
+            Button(action: onToggle) {
+                Text(powerSavingMode ? "Disable" : "Enable")
+                    .font(.caption)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .background(bannerColor)
+                    .cornerRadius(8)
+            }
+        }
+        .padding(8)
+        .background(bannerColor.opacity(0.1))
+        .cornerRadius(10)
+        .padding(.horizontal)
+        .animation(.easeInOut(duration: 0.3), value: powerSavingMode)
+    }
+}
+
+struct ThermalStateBannerView: View {
+    let thermalState: ProcessInfo.ThermalState
+    
+    private var isNominal: Bool {
+        thermalState == .nominal
+    }
+    
+    private var thermalFont: Font {
+        isNominal ? .caption : .body.bold()
+    }
+    
+    private var thermalTextColor: Color {
+        isNominal ? .secondary : thermalState.color
+    }
+    
+    private var bannerPadding: CGFloat {
+        isNominal ? 6 : 10
+    }
+    
+    private var bannerBackground: Color {
+        if isNominal {
+            return Color(.systemGray6).opacity(0.5)
+        } else {
+            return thermalState.color.opacity(0.15)
+        }
+    }
+    
+    var body: some View {
+        HStack {
+            Image(systemName: "thermometer")
+                .foregroundColor(thermalState.color)
+            
+            Text("Thermal State: \(thermalState.description)")
+                .font(thermalFont)
+                .foregroundColor(thermalTextColor)
+            
+            Spacer()
+            
+            Text("Updated: \(Date().formatted(date: .omitted, time: .shortened))")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .padding(bannerPadding)
+        .background(bannerBackground)
+        .cornerRadius(10)
+        .padding(.horizontal)
+        .animation(.easeInOut(duration: 0.3), value: thermalState)
     }
 }
 

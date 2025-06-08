@@ -15,6 +15,7 @@ struct SignalHistoryGraphView: View {
     @State private var selectedTimeRange: TimeRange = .fiveMinutes
     @State private var selectedDataPoint: (timestamp: Date, rssi: Int)?
     @State private var isZoomed = false
+    @State private var autoScroll = true
     
     enum TimeRange: String, CaseIterable {
         case oneMinute = "1 Min"
@@ -55,70 +56,128 @@ struct SignalHistoryGraphView: View {
         filteredHistory.map { $0.rssi }.max() ?? 0
     }
     
+    private var chartWidth: CGFloat {
+        // Minimum width per data point to ensure readability
+        let pointsPerMinute = 4.0 // Approximate data points per minute
+        let minutesInRange = Double(selectedTimeRange.minutes)
+        let estimatedPoints = max(Double(filteredHistory.count), pointsPerMinute * minutesInRange)
+        let minWidthPerPoint: CGFloat = 8.0 // Minimum pixels per data point
+        let screenWidth = UIScreen.main.bounds.width
+        
+        // Use larger of: screen width or calculated width for readability
+        return max(screenWidth - 40, estimatedPoints * minWidthPerPoint)
+    }
+    
     private var chartContent: some View {
-        Chart {
-            ForEach(filteredHistory, id: \.timestamp) { data in
-                LineMark(
-                    x: .value("Time", data.timestamp),
-                    y: .value("RSSI", data.rssi)
-                )
-                .foregroundStyle(signalColor(for: data.rssi))
-                
-                PointMark(
-                    x: .value("Time", data.timestamp),
-                    y: .value("RSSI", data.rssi)
-                )
-                .foregroundStyle(signalColor(for: data.rssi))
-                .symbolSize(selectedDataPoint?.timestamp == data.timestamp ? 100 : 50)
-                .annotation(position: .top) {
-                    if selectedDataPoint?.timestamp == data.timestamp {
-                        VStack {
-                            Text("\(data.rssi) dBm")
-                                .font(.caption)
-                                .bold()
-                            Text(formatDate(data.timestamp))
-                                .font(.caption2)
+        ScrollViewReader { proxy in
+                        ScrollView(.horizontal, showsIndicators: false) {
+                HStack {
+                    // Add some leading padding to ensure we can scroll to the very start
+                    Spacer()
+                        .frame(width: 20)
+                    
+                    Chart {
+                    ForEach(filteredHistory, id: \.timestamp) { data in
+                        LineMark(
+                            x: .value("Time", data.timestamp),
+                            y: .value("RSSI", data.rssi)
+                        )
+                        .foregroundStyle(signalColor(for: data.rssi))
+                        
+                        PointMark(
+                            x: .value("Time", data.timestamp),
+                            y: .value("RSSI", data.rssi)
+                        )
+                        .foregroundStyle(signalColor(for: data.rssi))
+                        .symbolSize(selectedDataPoint?.timestamp == data.timestamp ? 100 : 50)
+                        .annotation(position: .top) {
+                            if selectedDataPoint?.timestamp == data.timestamp {
+                                VStack {
+                                    Text("\(data.rssi) dBm")
+                                        .font(.caption)
+                                        .bold()
+                                    Text(formatDate(data.timestamp))
+                                        .font(.caption2)
+                                }
+                                .padding(4)
+                                .background(Color(.systemBackground))
+                                .cornerRadius(4)
+                                .shadow(radius: 2)
+                            }
                         }
-                        .padding(4)
-                        .background(Color(.systemBackground))
-                        .cornerRadius(4)
-                        .shadow(radius: 2)
+                    }
+                }
+                .frame(width: chartWidth, height: isZoomed ? 300 : 200)
+                
+                // Add trailing padding to ensure smooth scrolling
+                Spacer()
+                    .frame(width: 20)
+            }
+            .frame(height: isZoomed ? 300 : 200)
+                .chartXAxis {
+                    AxisMarks(values: .stride(by: .minute)) { value in
+                        if let date = value.as(Date.self) {
+                            AxisValueLabel(formatDate(date))
+                        }
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading) { value in
+                        if let rssi = value.as(Int.self) {
+                            AxisValueLabel("\(rssi) dBm")
+                        }
+                    }
+                }
+                .chartOverlay { chartProxy in
+                    GeometryReader { geometry in
+                        Rectangle().fill(.clear).contentShape(Rectangle())
+                            .gesture(
+                                DragGesture()
+                                    .onChanged { value in
+                                        autoScroll = false // Disable auto-scroll when user interacts
+                                        guard let plotFrame = chartProxy.plotFrame else { return }
+                                        let frame = geometry[plotFrame]
+                                        let x = value.location.x - frame.origin.x
+                                        guard x >= 0, x <= frame.width else { return }
+                                        
+                                        let date = chartProxy.value(atX: x, as: Date.self) ?? Date()
+                                        if let closest = filteredHistory.min(by: { abs($0.timestamp.timeIntervalSince(date)) < abs($1.timestamp.timeIntervalSince(date)) }) {
+                                            selectedDataPoint = closest
+                                        }
+                                    }
+                            )
+                    }
+                }
+                .id("chart")
+            }
+            .gesture(
+                DragGesture()
+                    .onChanged { _ in
+                        autoScroll = false // Disable auto-scroll when user manually scrolls
+                    }
+            )
+            .onTapGesture(count: 2) {
+                // Double-tap to go to start
+                withAnimation(.easeInOut(duration: 0.5)) {
+                    proxy.scrollTo("chart", anchor: .leading)
+                }
+                autoScroll = false
+            }
+            .onChange(of: filteredHistory.count) { _, newCount in
+                // Auto-scroll to the end when new data is added
+                if autoScroll && newCount > 0 {
+                    withAnimation(.easeInOut(duration: 0.5)) {
+                        proxy.scrollTo("chart", anchor: .trailing)
                     }
                 }
             }
-        }
-        .frame(height: isZoomed ? 300 : 200)
-        .chartXAxis {
-            AxisMarks(values: .stride(by: .minute)) { value in
-                if let date = value.as(Date.self) {
-                    AxisValueLabel(formatDate(date))
+            .onAppear {
+                // Initially scroll to the end
+                if !filteredHistory.isEmpty {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        proxy.scrollTo("chart", anchor: .trailing)
+                    }
                 }
-            }
-        }
-        .chartYAxis {
-            AxisMarks(position: .leading) { value in
-                if let rssi = value.as(Int.self) {
-                    AxisValueLabel("\(rssi) dBm")
-                }
-            }
-        }
-        .chartOverlay { proxy in
-            GeometryReader { geometry in
-                Rectangle().fill(.clear).contentShape(Rectangle())
-                    .gesture(
-                        DragGesture()
-                            .onChanged { value in
-                                guard let plotFrame = proxy.plotFrame else { return }
-                                let frame = geometry[plotFrame]
-                                let x = value.location.x - frame.origin.x
-                                guard x >= 0, x <= frame.width else { return }
-                                
-                                let date = proxy.value(atX: x, as: Date.self) ?? Date()
-                                if let closest = filteredHistory.min(by: { abs($0.timestamp.timeIntervalSince(date)) < abs($1.timestamp.timeIntervalSince(date)) }) {
-                                    selectedDataPoint = closest
-                                }
-                            }
-                    )
             }
         }
     }
@@ -171,9 +230,33 @@ struct SignalHistoryGraphView: View {
                     statsCards
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Signal Strength Over Time")
-                            .font(.headline)
-                            .padding(.horizontal)
+                        HStack {
+                            Text("Signal Strength Over Time")
+                                .font(.headline)
+                            
+                            Spacer()
+                            
+                            HStack(spacing: 8) {
+                                Button(action: {
+                                    autoScroll = true
+                                }) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: autoScroll ? "arrow.right.circle.fill" : "arrow.right.circle")
+                                        Text("Auto-scroll")
+                                    }
+                                    .font(.caption)
+                                    .foregroundColor(autoScroll ? .blue : .secondary)
+                                }
+                                
+                                Text("•")
+                                    .foregroundColor(.secondary)
+                                
+                                Text("\(filteredHistory.count) pts")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(.horizontal)
                         
                         chartContent
                     }
@@ -187,6 +270,27 @@ struct SignalHistoryGraphView: View {
                             isZoomed.toggle()
                         }
                     }
+                    .overlay(
+                        // Add instruction text when there's enough data to scroll
+                        filteredHistory.count > 10 ? 
+                        VStack {
+                            Spacer()
+                            HStack {
+                                Spacer()
+                                Text("Swipe ← → to navigate • Double-tap to go to start")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 4)
+                                    .background(Color(.systemBackground).opacity(0.8))
+                                    .cornerRadius(8)
+                                    .opacity(autoScroll ? 0.7 : 0.0)
+                                    .animation(.easeInOut, value: autoScroll)
+                                Spacer()
+                            }
+                            .padding(.bottom, 8)
+                        } : nil
+                    )
 
                     qualityLegend
                 }

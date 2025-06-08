@@ -103,7 +103,8 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     private let orientationManager = OrientationManager()
     private var updateTimer: Timer?
     private var lastUpdateTime: Date = Date()
-    private let minimumUpdateInterval: TimeInterval = 1.0
+    private let minimumUpdateInterval: TimeInterval = 2.0 // Reduced frequency to save power
+    @Published var powerSavingMode: Bool = false
     private var isScanning = false
     private var lastRSSIUpdate: [UUID: NSNumber] = [:]
     private let rssiThreshold: Int = 5
@@ -352,7 +353,8 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     }
 
     private func startContinuousUpdates() {
-        updateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+        let interval = powerSavingMode ? 5.0 : 2.0 // Adjust based on power saving mode
+        updateTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             self?.updateDeviceAnglesAndDistances()
         }
         RunLoop.main.add(updateTimer!, forMode: .common)
@@ -360,7 +362,8 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
     
     private func startThermalStateMonitoring() {
         // Get initial thermal state
-        thermalState = ProcessInfo.processInfo.thermalState
+        self.thermalState = ProcessInfo.processInfo.thermalState
+        logger.info("🌡️ Initial thermal state: \(self.thermalState.description)")
         
         // Observe thermal state changes
         thermalStateObserver = NotificationCenter.default.addObserver(
@@ -368,9 +371,13 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.thermalState = ProcessInfo.processInfo.thermalState
-            logger.info("🌡️ Thermal state changed to: \(self?.thermalState.description ?? "unknown")")
+            let newThermalState = ProcessInfo.processInfo.thermalState
+            logger.info("🌡️ Thermal state changed from \(self?.thermalState.description ?? "unknown") to: \(newThermalState.description)")
+            self?.thermalState = newThermalState
         }
+        
+        // Log thermal state monitoring is active
+        logger.info("🌡️ Thermal state monitoring started successfully")
     }
     
     deinit {
@@ -378,6 +385,36 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
         updateTimer = nil
         if let observer = thermalStateObserver {
             NotificationCenter.default.removeObserver(observer)
+        }
+    }
+    
+    // MARK: - Power Management
+    
+    private func cleanupDiscoveryHistory(_ history: [(timestamp: Date, rssi: Int)]) -> [(timestamp: Date, rssi: Int)] {
+        let maxHistorySize = powerSavingMode ? 50 : 200 // Limit history size
+        let cutoffTime = Date().addingTimeInterval(-300) // Keep only last 5 minutes
+        
+        let recentHistory = history.filter { $0.timestamp > cutoffTime }
+        
+        // If still too many, keep only the most recent
+        if recentHistory.count > maxHistorySize {
+            return Array(recentHistory.suffix(maxHistorySize))
+        }
+        
+        return recentHistory
+    }
+    
+    public func togglePowerSavingMode() {
+        powerSavingMode.toggle()
+        logger.info("🔋 Power saving mode: \(self.powerSavingMode ? "ON" : "OFF")")
+        
+        // Restart timer with new interval
+        updateTimer?.invalidate()
+        startContinuousUpdates()
+        
+        // Restart scan with new options if currently scanning
+        if isScanning {
+            startScan(triggerHaptic: false)
         }
     }
     
@@ -472,9 +509,9 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             // Update UI to show empty state
             self.updateFilteredDevices()
             
-            // Start a new scan with more permissive options
+            // Start a new scan with power-optimized options
             let options: [String: Any] = [
-                CBCentralManagerScanOptionAllowDuplicatesKey: true
+                CBCentralManagerScanOptionAllowDuplicatesKey: !powerSavingMode // Disable duplicates in power saving mode
             ]
             
             // Start scanning for all devices
@@ -539,7 +576,9 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
                     firstSeen: existingDevice.firstSeen,
                     deviceType: existingDevice.deviceType,
                     batteryLevel: existingDevice.batteryLevel,
-                    discoveryHistory: existingDevice.discoveryHistory + [(timestamp: currentTime, rssi: RSSI.intValue)]
+                    discoveryHistory: cleanupDiscoveryHistory(
+                        existingDevice.discoveryHistory + [(timestamp: currentTime, rssi: RSSI.intValue)]
+                    )
                 )
                 logger.info("📱 Updated existing device: \(device.name) (Services: \(device.services?.count ?? 0))")
             } else {
@@ -1005,6 +1044,7 @@ class BluetoothViewModel: NSObject, ObservableObject, CBCentralManagerDelegate, 
             logger.error("❌ Failed to save connection settings: \(error.localizedDescription)")
         }
     }
+
     
     private func loadConnectionSettings() {
         guard let data = UserDefaults.standard.data(forKey: "ConnectionSettings") else {

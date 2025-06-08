@@ -58,4 +58,74 @@ Package.resolved
 *.xcodeproj/xcuserdata/
 
 # Preview assets
-Bluetooth Tracker/Preview Content/ 
+Bluetooth Tracker/Preview Content/
+
+# Additional garbage files to ignore
+*.dSYM.zip
+*.dSYM/
+*.ipa
+*.app
+
+# IDE generated files
+.vscode/
+.idea/
+*.sublime-*
+
+# Backup files
+*~
+*.backup
+*.bak
+*.old
+
+# Temporary files
+.tmp/
+temp/
+tmp/
+
+# Crash logs and debugging
+crash_*.log
+*.crash
+*.dump
+
+# Xcode additional user data
+*.xcworkspace/xcuserdata/
+**/xcuserdata/**
+
+# Build artifacts
+*.hmap
+*.linkFileList
+*.o
+*.d
+
+# iOS Simulator files
+iOS SimulatorDevice-*
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Keychain files
+*.keychain
+*.keychain-db
+
+# Profile data
+*.profraw
+*.profdata
+
+# Memory dumps
+*.memgraph 
